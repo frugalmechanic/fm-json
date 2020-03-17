@@ -28,6 +28,109 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |  "true" : true,
       |  "false" : false,
       |  "string" : "string",
+      |  "intZero" : 0,
+      |  "intMin" : -2147483648,
+      |  "intMax" : 2147483647,
+      |  "longMin" : -9223372036854775808,
+      |  "longMax" : 9223372036854775807,
+      |  "bigInteger" : 92233720368547758079223372036854775807,
+      |  "floatMinPositive" : 1.4E-45,
+      |  "floatMin" : -3.4028235E+38,
+      |  "floatMax" : 3.4028235E+38,
+      |  "doubleMinPositive" : 4.9E-324,
+      |  "doubleMin" : -1.7976931348623157E+308,
+      |  "doubleMax" : 1.7976931348623157E+308,
+      |  "bigDecimal" : 92233720368547758079223372036854775807.92233720368547758079223372036854775807,
+      |  "object" : {
+      |    "nestedString" : "testing 123",
+      |    "nestedArray" : [
+      |      {
+      |        "foo" : "bar",
+      |        "field" : 123.456,
+      |        "array" : [
+      |          "one",
+      |          2,
+      |          3.3333333
+      |        ],
+      |        "null" : null,
+      |        "false" : false,
+      |        "intZero" : 0,
+      |        "emptyObject" : { },
+      |        "emptyArray" : [ ]
+      |      },
+      |      "two",
+      |      3.3
+      |    ]
+      |  },
+      |  "intArray" : [
+      |    1,
+      |    2,
+      |    3
+      |  ],
+      |  "stringArray" : [
+      |    "one",
+      |    "two",
+      |    "three"
+      |  ],
+      |  "mixedArray" : [
+      |    1,
+      |    "two",
+      |    3.3
+      |  ],
+      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      |}
+      |""".stripMargin.trim
+
+  private val jsonObjectNode: JsonObject = {
+    import Implicits._
+
+    JsonObject(
+      "null" -> JsonNull,
+      "true" -> true,
+      "false" -> false,
+      "string" -> "string",
+      "intZero" -> 0,
+      "intMin" -> Int.MinValue,
+      "intMax" -> Int.MaxValue,
+      "longMin" -> Long.MinValue,
+      "longMax" -> Long.MaxValue,
+      "bigInteger" -> new BigInteger("92233720368547758079223372036854775807"),
+      "floatMinPositive" -> new BigDecimal("1.4E-45"),
+      "floatMin" -> new BigDecimal("-3.4028235E+38"),
+      "floatMax" -> new BigDecimal("3.4028235E+38"),
+      "doubleMinPositive" -> new BigDecimal("4.9E-324"),
+      "doubleMin" -> new BigDecimal("-1.7976931348623157E+308"),
+      "doubleMax" -> new BigDecimal("1.7976931348623157E+308"),
+      "bigDecimal" -> new BigDecimal("92233720368547758079223372036854775807.92233720368547758079223372036854775807"),
+      "object" -> JsonObject(
+        "nestedString" -> "testing 123",
+        "nestedArray" -> JsonArray(
+          JsonObject(
+            "foo" -> "bar",
+            "field" -> new BigDecimal("123.456"),
+            "array" -> JsonArray("one", 2, new BigDecimal("3.3333333")),
+            "null" -> JsonNull,
+            "false" -> false,
+            "intZero" -> 0,
+            "emptyObject" -> JsonObject.empty,
+            "emptyArray" -> JsonArray.empty
+          ),
+          "two",
+          new BigDecimal("3.3")
+        )
+      ),
+      "intArray" -> JsonArray(1, 2, 3),
+      "stringArray" -> JsonArray("one", "two", "three"),
+      "mixedArray" -> JsonArray(1, "two", new BigDecimal("3.3")),
+      "unicode" -> "Hello \r\t\n \\ / \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+    )
+  }
+
+  private val jsonObjectStringMinimal: String =
+    """
+      |{
+      |  "true" : true,
+      |  "string" : "string",
       |  "intMin" : -2147483648,
       |  "intMax" : 2147483647,
       |  "longMin" : -9223372036854775808,
@@ -75,13 +178,11 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |}
       |""".stripMargin.trim
 
-  private val jsonObjectNode: JsonObject = {
+  private val jsonObjectNodeMinimal: JsonObject = {
     import Implicits._
 
     JsonObject(
-      "null" -> JsonNull,
       "true" -> true,
-      "false" -> false,
       "string" -> "string",
       "intMin" -> Int.MinValue,
       "intMax" -> Int.MaxValue,
@@ -218,9 +319,16 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     checkParse("92233720368547758079223372036854775807.92233720368547758079223372036854775807", JsonBigDecimal(new BigDecimal("92233720368547758079223372036854775807.92233720368547758079223372036854775807")), JsonBigDecimal)
   }
 
-  test("object") {
-    checkParse(jsonObjectString, jsonObjectNode, JsonObject)
+  test("object - JsonOptions.default") {
+    checkParse(jsonObjectString, jsonObjectNode, JsonObject, JsonOptions.default)
+  }
 
+  test("object - JsonOptions.minimal") {
+    JsonNode.parse(jsonObjectString, JsonOptions.minimal) shouldBe jsonObjectNodeMinimal
+    jsonObjectNode.toJson(JsonOptions.minimal.copy(prettyFormat = true)) shouldBe jsonObjectStringMinimal
+  }
+
+  test("object - concatenation") {
     val oneA: (String, JsonInt) = ("one", JsonInt(1))
     val twoA: (String, JsonInt) = ("two", JsonInt(2))
     val threeA: (String, JsonInt) = ("three", JsonInt(3))
@@ -315,12 +423,17 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     }
   }
 
-  private def checkParse(s: String, expected: JsonNode, parseFactory: JsonNodeParseFactory[_,_]): Unit = {
+  private def checkParse(
+    s: String,
+    expected: JsonNode,
+    parseFactory: JsonNodeParseFactory[_,_],
+    options: JsonOptions = JsonOptions.default
+  ): Unit = {
     val node: JsonNode = JsonNode.parse(s)
 
     node shouldBe expected
     node.toPrettyJson() shouldBe s
-    JsonNode.parse(JsonNodeParser(node)) shouldBe expected
+    JsonNode.parse(JsonNodeParser(node), options) shouldBe expected
     JsonNode.parse(expected.toPrettyJson()) shouldBe expected
     JsonNode.parse(expected.toCompactJson()) shouldBe expected
 
@@ -337,6 +450,8 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     checkGenerator(expected)
 
     checkReRead(s, expected, parseFactory)
+
+    checkMinimal(s)
   } withClue(s"checkParse($s, $expected)")
 
   private def checkPipe(parser: JsonParser, expected: String): Unit = {
@@ -350,14 +465,35 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
 
   private def checkGenerator(node: JsonNode): Unit = {
     val generator: JsonNodeGenerator = new JsonNodeGenerator()
-    node.write(generator)
+    node.write(generator, JsonOptions.default)
     generator.result shouldBe node
   } withClue s"checkGenerator($node)"
 
   private def checkReRead(s: String, expected: JsonNode, parseFactory: JsonNodeParseFactory[_,_]): Unit = {
     val parser: JsonParser = Json.jsonFactory.createParser(s)
 
-    parseFactory.parseNode(parser) shouldBe expected
+    parseFactory.parseNode(parser, JsonOptions.default) shouldBe expected
     parseFactory.tryParse(parser) shouldBe None
   } withClue(s"checkReRead($s, $expected, $parseFactory)")
+
+  private def checkMinimal(s: String): Unit = {
+    val node: JsonNode = JsonNode.parse(s, JsonOptions.default)
+    val minimalNode: JsonNode = JsonNode.parse(s, JsonOptions.minimal)
+
+    // Sanity check the JsonNodeParser logic works properly
+    minimalNode shouldBe JsonNode.parse(JsonNodeParser(node), JsonOptions.minimal)
+
+    node.toJson(JsonOptions.minimal) shouldBe minimalNode.toJson(JsonOptions.default)
+
+  } withClue(s"checkMinimal($s)")
+
+
+  test("") {
+    JsonObject(
+      "key" -> JsonValue("asd"),
+      "key" -> JsonValue(123),
+      "key" -> JsonValue(false),
+      "key" -> JsonValue(false)
+    )
+  }
 }

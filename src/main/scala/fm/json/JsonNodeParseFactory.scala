@@ -26,18 +26,28 @@ trait JsonNodeParseFactory[A, N <: JsonNode] {
   /**
    * Note: This should not advance to the next token
    */
-  protected def parseImpl(parser: JsonParser): A
+  protected def parseImpl(parser: JsonParser, options: JsonOptions): A
 
-  final def tryParse(s: String): Option[A] = Try{ parse(s) }.toOption
-  final def tryParse(r: Reader): Option[A] = Try{ parse(r) }.toOption
-  final def tryParse(parser: JsonParser): Option[A] = Try{ parse(parser) }.toOption
+  final def tryParse(s: String): Option[A] = tryParse(s, JsonOptions.default)
+  final def tryParse(s: String, options: JsonOptions): Option[A] = Try{ parse(s, options) }.toOption
 
-  final def parse(s: String): A = parse(Json.jsonFactory.createParser(s))
-  final def parse(r: Reader): A = parse(Json.jsonFactory.createParser(r))
+  final def tryParse(r: Reader): Option[A] = tryParse(r, JsonOptions.default)
+  final def tryParse(r: Reader, options: JsonOptions): Option[A] = Try{ parse(r, options) }.toOption
 
-  final def parse(parser: JsonParser): A = {
+  final def tryParse(parser: JsonParser): Option[A] = tryParse(parser, JsonOptions.default)
+  final def tryParse(parser: JsonParser, options: JsonOptions): Option[A] = Try{ parse(parser, options) }.toOption
+
+  final def parse(s: String): A = parse(s, JsonOptions.default)
+  final def parse(s: String, options: JsonOptions): A = parse(Json.jsonFactory.createParser(s), options)
+
+  final def parse(r: Reader): A = parse(r, JsonOptions.default)
+  final def parse(r: Reader, options: JsonOptions): A = parse(Json.jsonFactory.createParser(r), options)
+
+  final def parse(parser: JsonParser): A = parse(parser, JsonOptions.default)
+
+  final def parse(parser: JsonParser, options: JsonOptions): A = {
     // This wraps the parseImpl method and makes sure that we clear the current token
-    val res: A = parseImpl(parser)
+    val res: A = parseImpl(parser, options)
 
     // Clear the token (which is idempotent unlike parser.nextToken())
     parser.clearCurrentToken()
@@ -51,7 +61,8 @@ trait JsonNodeParseFactory[A, N <: JsonNode] {
 
   final def parseNode(s: String): N = apply(parse(s))
   final def parseNode(r: Reader): N = apply(parse(r))
-  final def parseNode(parser: JsonParser): N = apply(parse(parser))
+  final def parseNode(parser: JsonParser): N = parseNode(parser, JsonOptions.default)
+  final def parseNode(parser: JsonParser, options: JsonOptions): N = apply(parse(parser, options))
 
   final protected def currentTokenOrAdvance(parser: JsonParser): JsonToken = {
     if (!hasTokenOrAdvance(parser)) throw new JsonParseException(parser, "Incomplete JSON?")

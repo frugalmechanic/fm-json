@@ -33,7 +33,7 @@ object JsonBinary extends JsonNodeParseFactory[ImmutableArray[Byte], JsonBinary]
     JsonBinary(ImmutableArray.copy(data))
   }
 
-  override def parseImpl(parser: JsonParser): ImmutableArray[Byte] = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): ImmutableArray[Byte] = {
     currentTokenOrAdvance(parser)
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
     parser.readBinaryValue(bos)
@@ -44,11 +44,11 @@ object JsonBinary extends JsonNodeParseFactory[ImmutableArray[Byte], JsonBinary]
 final case class JsonBinary(value: ImmutableArray[Byte]) extends JsonValue {
   override def asString: String = Base64.encode(value.toArray)
   override def asToken: JsonToken = JsonToken.VALUE_STRING // This is serialized as Base64
-  override def write(gen: JsonGenerator): Unit = gen.writeBinary(value.toArray)
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeBinary(value.toArray)
 }
 
 object JsonString extends JsonNodeParseFactory[String, JsonString] {
-  override def parseImpl(parser: JsonParser): String = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): String = {
     val token: JsonToken = currentTokenOrAdvance(parser)
     requireParser(parser, token.isScalarValue, s"Expected a Scalar JSON Value but got $token")
     if (token === JsonToken.VALUE_NULL) "" else parser.getValueAsString()
@@ -58,11 +58,11 @@ object JsonString extends JsonNodeParseFactory[String, JsonString] {
 final case class JsonString(value: String) extends JsonValue {
   override def asString: String = value
   override def asToken: JsonToken = JsonToken.VALUE_STRING
-  override def write(gen: JsonGenerator): Unit = gen.writeString(value)
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeString(value)
 }
 
 object JsonDouble extends JsonNodeParseFactory[Double, JsonDouble] {
-  override def parseImpl(parser: JsonParser): Double = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Double = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -81,7 +81,8 @@ final case class JsonDouble(value: Double) extends JsonFloatingPoint {
   override def asNumber: Number = value
   override def asBigDecimal: BigDecimal = BigDecimal.valueOf(value)
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.DOUBLE
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value === 0D
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 
   override def isFloat: Boolean = {
     val float: Float = value.toFloat
@@ -97,7 +98,7 @@ final case class JsonDouble(value: Double) extends JsonFloatingPoint {
 }
 
 object JsonFloat extends JsonNodeParseFactory[Float, JsonFloat] {
-  override def parseImpl(parser: JsonParser): Float = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Float = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -116,7 +117,8 @@ final case class JsonFloat(value: Float) extends JsonFloatingPoint {
   override def asNumber: Number = value
   override def asBigDecimal: BigDecimal = BigDecimal.valueOf(value.toDouble)
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.FLOAT
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value === 0F
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 
   override def isFloat: Boolean = true
   override def toFloat: Float = value
@@ -128,7 +130,7 @@ final case class JsonFloat(value: Float) extends JsonFloatingPoint {
 }
 
 object JsonInt extends JsonNodeParseFactory[Int, JsonInt] {
-  override def parseImpl(parser: JsonParser): Int = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Int = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -145,7 +147,8 @@ final case class JsonInt(value: Int) extends JsonInteger {
   override def asBigDecimal: BigDecimal = BigDecimal.valueOf(value)
   override def asBigInteger: BigInteger = BigInteger.valueOf(value)
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.INT
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value === 0
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 
   override def isInt: Boolean = true
   override def toInt: Int = value
@@ -157,7 +160,7 @@ final case class JsonInt(value: Int) extends JsonInteger {
 }
 
 object JsonLong extends JsonNodeParseFactory[Long, JsonLong] {
-  override def parseImpl(parser: JsonParser): Long = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Long = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -174,7 +177,8 @@ final case class JsonLong(value: Long) extends JsonInteger {
   override def asBigDecimal: BigDecimal = BigDecimal.valueOf(value)
   override def asBigInteger: BigInteger = BigInteger.valueOf(value)
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.LONG
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value === 0L
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 
   override def isInt: Boolean = value >= Int.MinValue && value <= Int.MaxValue
   override def toInt: Int = if (isInt) value.toInt else throw new ArithmeticException(s"Cannot convert $value to an int")
@@ -186,7 +190,7 @@ final case class JsonLong(value: Long) extends JsonInteger {
 }
 
 object JsonBigInteger extends JsonNodeParseFactory[BigInteger, JsonBigInteger] {
-  override def parseImpl(parser: JsonParser): BigInteger = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): BigInteger = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -204,7 +208,8 @@ final case class JsonBigInteger(value: BigInteger) extends JsonInteger {
   override def asBigDecimal: BigDecimal = new BigDecimal(value)
   override def asBigInteger: BigInteger = value
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.BIG_INTEGER
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value.isZero
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 
   override def isBigInteger: Boolean = true
   override def toBigInteger: BigInteger = value
@@ -212,7 +217,7 @@ final case class JsonBigInteger(value: BigInteger) extends JsonInteger {
 }
 
 object JsonBigDecimal extends JsonNodeParseFactory[BigDecimal, JsonBigDecimal] {
-  override def parseImpl(parser: JsonParser): BigDecimal = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): BigDecimal = {
     val token: JsonToken = currentTokenOrAdvance(parser)
     requireParser(parser, token.isNumeric, "Expected JsonToken.VALUE_NUMBER_INT or JsonToken.VALUE_NUMBER_FLOAT")
     parser.getDecimalValue
@@ -224,7 +229,8 @@ final case class JsonBigDecimal(value: BigDecimal) extends JsonFloatingPoint {
   override def asNumber: Number = value
   override def asBigDecimal: BigDecimal = value
   override def numberType: JsonParser.NumberType = JsonParser.NumberType.BIG_DECIMAL
-  override def write(gen: JsonGenerator): Unit = gen.writeNumber(value)
+  override def isZero: Boolean = value.isZero
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNumber(value)
 }
 
 sealed abstract class JsonInteger extends JsonNumber {
@@ -256,6 +262,11 @@ sealed abstract class JsonNumber extends JsonValue {
   def asNumber: Number
   def asBigDecimal: BigDecimal
   def numberType: JsonParser.NumberType
+
+  /** Is this number zero? */
+  def isZero: Boolean
+
+  final def isNotZero: Boolean = !isZero
 
   /** Can this value be converted to an int? */
   def isInt: Boolean = Try{ asBigDecimal.intValueExact() }.isSuccess
@@ -315,8 +326,8 @@ object JsonTrue extends JsonTrue with JsonNodeParseFactory[Boolean, JsonTrue] {
     this
   }
 
-  override def parseImpl(parser: JsonParser): Boolean = {
-    val value: Boolean = JsonBoolean.parse(parser)
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Boolean = {
+    val value: Boolean = JsonBoolean.parse(parser, options)
     requireParser(parser, value, s"Expected true value but got: $value")
     value
   }
@@ -333,8 +344,8 @@ object JsonFalse extends JsonFalse with JsonNodeParseFactory[Boolean, JsonFalse]
     this
   }
 
-  override def parseImpl(parser: JsonParser): Boolean = {
-    val value: Boolean = JsonBoolean.parse(parser)
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Boolean = {
+    val value: Boolean = JsonBoolean.parse(parser, options)
     requireParser(parser, !value, s"Expected false value but got: $value")
     value
   }
@@ -355,7 +366,7 @@ object JsonBoolean extends JsonNodeParseFactory[Boolean, JsonBoolean] {
     }
   }
 
-  override def parseImpl(parser: JsonParser): Boolean = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Boolean = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -380,13 +391,13 @@ object JsonBoolean extends JsonNodeParseFactory[Boolean, JsonBoolean] {
 }
 
 sealed abstract class JsonBoolean(val value: Boolean) extends JsonValue {
-  final override def write(gen: JsonGenerator): Unit = gen.writeBoolean(value)
+  final override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeBoolean(value)
 }
 
 object JsonNull extends JsonNull with JsonNodeParseFactory[Null, JsonNull] {
   def apply(n: Null): JsonNull = this
 
-  override def parseImpl(parser: JsonParser): Null = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): Null = {
     currentTokenOrAdvance(parser)
     requireToken(parser, JsonToken.VALUE_NULL)
     null
@@ -396,14 +407,14 @@ object JsonNull extends JsonNull with JsonNodeParseFactory[Null, JsonNull] {
 sealed abstract class JsonNull extends JsonValue {
   override def asString: String = "null"
   override def asToken: JsonToken = JsonToken.VALUE_NULL
-  override def write(gen: JsonGenerator): Unit = gen.writeNull()
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = gen.writeNull()
   override def isJsonNull: Boolean = false
 }
 
 object JsonValue extends JsonValueFactory with JsonNodeParseFactory[JsonValue, JsonValue] {
   def apply(node: JsonValue): JsonValue = node
 
-  override def parseImpl(parser: JsonParser): JsonValue = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): JsonValue = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -456,7 +467,7 @@ object JsonObject extends JsonNodeParseFactory[IndexedSeq[(String, JsonNode)], J
 
   val empty: JsonObject = JsonObject()
 
-  override def parseImpl(parser: JsonParser): IndexedSeq[(String, JsonNode)] = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): IndexedSeq[(String, JsonNode)] = {
     currentTokenOrAdvance(parser)
     requireToken(parser, JsonToken.START_OBJECT)
     parser.nextToken() // Advance past the START_OBJECT token
@@ -466,10 +477,31 @@ object JsonObject extends JsonNodeParseFactory[IndexedSeq[(String, JsonNode)], J
     while (!hasTokenOrAdvance(parser, JsonToken.END_OBJECT)) {
       if (!parser.hasToken(JsonToken.FIELD_NAME)) throw new JsonParseException(parser, s"Expected JsonToken.FIELD_NAME but got: ${parser.currentToken()}")
       parser.nextToken() // Advance past the FIELD_NAME token
-      builder += ((parser.getCurrentName, JsonNode.parse(parser)))
+
+      val fieldName: String = parser.getCurrentName
+      val fieldValue: JsonNode = JsonNode.parse(parser, options)
+
+      if (shouldIncludeField(fieldName, fieldValue, options)) {
+        builder += ((fieldName, fieldValue))
+      }
     }
 
     builder.result
+  }
+
+  private[json] def shouldIncludeField(pair: (String, JsonNode), options: JsonOptions): Boolean = {
+    shouldIncludeField(pair._1, pair._2, options)
+  }
+
+  private[json] def shouldIncludeField(name: String, value: JsonNode, options: JsonOptions): Boolean = {
+    value match {
+      case n: JsonNumber => options.includeZeros || n.isNotZero
+      case b: JsonBoolean => options.includeFalse || b.value
+      case o: JsonObject => options.includeEmptyObjects || o.members.exists{ shouldIncludeField(_, options) }
+      case a: JsonArray => options.includeEmptyArrays || a.isNotEmpty
+      case JsonNull => options.includeNulls
+      case _ => true
+    }
   }
 }
 
@@ -486,16 +518,20 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   def apply(fieldName: String): JsonNode = get(fieldName).getOrElse{ throw new NoSuchElementException(s"No $fieldName member") }
   def get(fieldName: String): Option[JsonNode] = members.find{ _._1 === fieldName }.map{ _._2 }
 
-  override def write(gen: JsonGenerator): Unit = {
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = {
     gen.writeStartObject()
 
     members.foreach{ pair: (String, JsonNode) =>
-      gen.writeFieldName(pair._1)
-      pair._2.write(gen)
+      if (JsonObject.shouldIncludeField(pair, options)) {
+        gen.writeFieldName(pair._1)
+        pair._2.write(gen, options)
+      }
     }
 
     gen.writeEndObject()
   }
+
+  def toJsonObject(options: JsonOptions): JsonObject = toJsonNode(options).asInstanceOf[JsonObject]
 
   override def asToken: JsonToken = JsonToken.START_OBJECT
   override protected def atImpl(ptr: JsonPointer): Option[JsonNode] = get(ptr.getMatchingProperty)
@@ -512,7 +548,7 @@ object JsonArray extends JsonNodeParseFactory[IndexedSeq[JsonNode], JsonArray] {
 
   val empty: JsonArray = JsonArray()
 
-  override def parseImpl(parser: JsonParser): IndexedSeq[JsonNode] = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): IndexedSeq[JsonNode] = {
     currentTokenOrAdvance(parser)
     requireToken(parser, JsonToken.START_ARRAY)
     parser.nextToken() // Advance past the START_ARRAY token
@@ -520,7 +556,7 @@ object JsonArray extends JsonNodeParseFactory[IndexedSeq[JsonNode], JsonArray] {
     val builder = Vector.newBuilder[JsonNode]
 
     while (!hasTokenOrAdvance(parser, JsonToken.END_ARRAY)) {
-      builder += JsonNode.parse(parser)
+      builder += JsonNode.parse(parser, options)
     }
 
     builder.result
@@ -535,9 +571,9 @@ final case class JsonArray(elements: IndexedSeq[JsonNode]) extends JsonContainer
   override def isJsonArray: Boolean = true
   override def isJsonObject: Boolean = false
 
-  override def write(gen: JsonGenerator): Unit = {
+  override def write(gen: JsonGenerator, options: JsonOptions): Unit = {
     gen.writeStartArray(size)
-    elements.foreach{ _.write(gen) }
+    elements.foreach{ _.write(gen, options) }
     gen.writeEndArray()
   }
 
@@ -559,12 +595,13 @@ sealed abstract class JsonContainerNode extends JsonNode {
   def size: Int
 
   final def isEmpty: Boolean = size === 0
+  final def isNotEmpty: Boolean = !isEmpty
 }
 
 object JsonNode extends JsonValueFactory with JsonNodeParseFactory[JsonNode, JsonNode] {
   def apply(node: JsonNode): JsonNode = node
 
-  override def parseImpl(parser: JsonParser): JsonNode = {
+  override protected def parseImpl(parser: JsonParser, options: JsonOptions): JsonNode = {
     val token: JsonToken = currentTokenOrAdvance(parser)
 
     token match {
@@ -579,8 +616,8 @@ object JsonNode extends JsonValueFactory with JsonNodeParseFactory[JsonNode, Jso
           case JsonParser.NumberType.INT => JsonInt(parser.getIntValue)
           case JsonParser.NumberType.LONG => JsonLong(parser.getLongValue)
         }
-      case JsonToken.START_ARRAY => JsonArray.parseNode(parser)
-      case JsonToken.START_OBJECT => JsonObject.parseNode(parser)
+      case JsonToken.START_ARRAY => JsonArray.parseNode(parser, options)
+      case JsonToken.START_OBJECT => JsonObject.parseNode(parser, options)
       case JsonToken.END_ARRAY | JsonToken.END_OBJECT | JsonToken.FIELD_NAME | JsonToken.NOT_AVAILABLE | JsonToken.VALUE_EMBEDDED_OBJECT =>
         throw new IllegalStateException(s"Unexpected JsonToken: $token")
     }
@@ -607,19 +644,33 @@ sealed abstract class JsonNode {
 
   def asToken: JsonToken
   protected def atImpl(ptr: JsonPointer): Option[JsonNode]
-  def write(gen: JsonGenerator): Unit
+  final def write(gen: JsonGenerator): Unit = write(gen, JsonOptions.default)
+  def write(gen: JsonGenerator, options: JsonOptions): Unit
 
   final override def toString(): String = toCompactJson()
 
-  final def toCompactJson(): String = toJson(false)
-  final def toPrettyJson(): String = toJson(true)
+  final def toCompactJson(): String = toJson(JsonOptions.default)
+  final def toPrettyJson(): String = toJson(JsonOptions.pretty)
+  final def toPrettyJsonWithoutNulls(): String = toJson(JsonOptions.prettyWithoutNulls)
+  final def toJsonWithoutNulls(): String = toJson(JsonOptions.defaultWithoutNulls)
 
   final def toJson(pretty: Boolean): String = {
+    toJson(if (pretty) JsonOptions.pretty else JsonOptions.default)
+  }
+
+  final def toJson(options: JsonOptions): String = {
     val sw: StringWriter = new StringWriter()
     val gen: JsonGenerator = Json.jsonFactory.createGenerator(sw)
-    if (pretty) gen.setPrettyPrinter(Json.jsonPrettyPrinter)
-    write(gen)
+    if (options.prettyFormat) gen.setPrettyPrinter(Json.jsonPrettyPrinter)
+    write(gen, options)
     gen.close()
     sw.toString
+  }
+
+  final def toJsonNode(options: JsonOptions): JsonNode = {
+    val gen: JsonNodeGenerator = new JsonNodeGenerator(options)
+    write(gen, options)
+    gen.close()
+    gen.result
   }
 }

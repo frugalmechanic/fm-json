@@ -23,13 +23,13 @@ import java.math.{BigDecimal, BigInteger}
 import java.nio.charset.StandardCharsets
 
 object JsonNodeGenerator {
-  private case class JsonObjectBuilder(parent: JsonNodeBuilder) extends JsonNodeBuilder {
+  private case class JsonObjectBuilder(parent: JsonNodeBuilder, options: JsonOptions) extends JsonNodeBuilder {
     private val builder = Vector.newBuilder[(String, JsonNode)]
     private var currentFieldName: String = null
     def += (fieldName: String): Unit = currentFieldName = fieldName
 
     def += (node: JsonNode): Unit = {
-      builder += ((currentFieldName, node))
+      if (JsonObject.shouldIncludeField(currentFieldName, node, options)) builder += ((currentFieldName, node))
       currentFieldName = null
     }
 
@@ -70,7 +70,9 @@ object JsonNodeGenerator {
 /**
  * Produces a JsonNode
  */
-final class JsonNodeGenerator extends JsonGenerator {
+final class JsonNodeGenerator(options: JsonOptions) extends JsonGenerator {
+  def this() = this(JsonOptions.default)
+
   import JsonNodeGenerator._
 
   private[this] val rootBuilder: JsonRootNodeBuilder = JsonRootNodeBuilder()
@@ -114,7 +116,7 @@ final class JsonNodeGenerator extends JsonGenerator {
     }
   }
 
-  override def writeStartObject(): Unit = currentBuilder = new JsonObjectBuilder(currentBuilder)
+  override def writeStartObject(): Unit = currentBuilder = new JsonObjectBuilder(currentBuilder, options)
 
   override def writeEndObject(): Unit = {
     currentBuilder match {
