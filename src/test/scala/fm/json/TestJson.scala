@@ -16,7 +16,7 @@
 package fm.json
 
 import com.fasterxml.jackson.core.{JsonGenerator, JsonParser}
-import java.io.StringWriter
+import java.io.{Reader, StringReader, StringWriter}
 import java.math.{BigDecimal, BigInteger}
 import org.scalatest.{AppendedClues, FunSuite, Matchers}
 
@@ -215,6 +215,15 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     )
   }
 
+  private val anotherJsonObjectString: String = {
+    """{ "another": "object", "foo": 123, "bar": true }"""
+  }
+
+  private val anotherJsonObjectNode: JsonObject = {
+    import Implicits._
+    JsonObject("another" -> "object", "foo" -> 123, "bar" -> true)
+  }
+
   test("null") {
     checkParse("null", JsonNull, JsonNull)
   }
@@ -342,6 +351,37 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     JsonObject(oneA, twoA, threeA) ++ JsonObject(threeB, oneB, twoB) shouldBe JsonObject(oneB, twoB, threeB)
 
     JsonObject(oneA, twoA, threeA) :+ twoB shouldBe JsonObject(oneA, twoB, threeA)
+  }
+
+  test("object - multiple objects in string, should read first object") {
+    val s: String = jsonObjectString+anotherJsonObjectString
+    JsonObject.parseNode(s) shouldBe jsonObjectNode
+  }
+
+  // Does not work probably due to buffering in the JsonParser - Use JsonParser (see example below) if you need this
+  ignore("object - multiple objects in reader, should read first object and then the second w/o newline") {
+    val r: Reader = new StringReader(jsonObjectString+anotherJsonObjectString)
+    JsonObject.parseNode(r) shouldBe jsonObjectNode
+    JsonObject.parseNode(r) shouldBe anotherJsonObjectNode
+  }
+
+  // Does not work probably due to buffering in the JsonParser - Use JsonParser (see example below) if you need this
+  ignore("object - multiple objects in reader, should read first object and then the second w/ newline") {
+    val r: Reader = new StringReader(jsonObjectString+"\n"+anotherJsonObjectString)
+    JsonObject.parseNode(r) shouldBe jsonObjectNode
+    JsonObject.parseNode(r) shouldBe anotherJsonObjectNode
+  }
+
+  test("object - multiple objects in JsonParser, should read first object and then the second w/o newline") {
+    val p: JsonParser = Json.jsonFactory.createParser(new StringReader(jsonObjectString+anotherJsonObjectString))
+    JsonObject.parseNode(p) shouldBe jsonObjectNode
+    JsonObject.parseNode(p) shouldBe anotherJsonObjectNode
+  }
+
+  test("object - multiple objects in JsonParser, should read first object and then the second w/ newline") {
+    val p: JsonParser = Json.jsonFactory.createParser(new StringReader(jsonObjectString+"\n"+anotherJsonObjectString))
+    JsonObject.parseNode(p) shouldBe jsonObjectNode
+    JsonObject.parseNode(p) shouldBe anotherJsonObjectNode
   }
 
   test("array") {
