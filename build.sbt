@@ -4,9 +4,9 @@ name := "fm-json"
 
 description := "JSON Utils for Scala"
 
-scalaVersion := "2.12.11"
+scalaVersion := "2.12.13"
 
-crossScalaVersions := Seq("2.11.11", "2.12.11")
+crossScalaVersions := Seq("2.11.12", "2.12.13")
 
 val fatalWarnings = Seq(
   // Enable -Xlint, but disable the default 'unused' so we can manually specify below
@@ -40,6 +40,6 @@ scalacOptions in (Compile, doc) --= fatalWarnings
 libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-core" % "2.10.0",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.10.0",
-  "com.frugalmechanic" %% "fm-common" % "0.42.0",
+  "com.frugalmechanic" %% "fm-common" % "0.50.0",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
 )
