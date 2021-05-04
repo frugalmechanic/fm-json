@@ -572,7 +572,9 @@ final case class JsonArray(elements: IndexedSeq[JsonNode]) extends JsonContainer
   override def isJsonObject: Boolean = false
 
   override def write(gen: JsonGenerator, options: JsonOptions): Unit = {
-    gen.writeStartArray(size)
+    // Deprecated and just calls gen.writeStartArray(). Not sure if there is an advantage to calling the writeStartArray(obj, size) version
+    //gen.writeStartArray(size)
+    gen.writeStartArray()
     elements.foreach{ _.write(gen, options) }
     gen.writeEndArray()
   }
