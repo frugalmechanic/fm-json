@@ -40,6 +40,6 @@ scalacOptions in (Compile, doc) --= fatalWarnings
 libraryDependencies ++= Seq(
   "com.fasterxml.jackson.core" % "jackson-core" % "2.12.3",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.3",
-  "com.frugalmechanic" %% "fm-common" % "0.50.0",
+  "com.frugalmechanic" %% "fm-common" % "0.51.0",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
 )
