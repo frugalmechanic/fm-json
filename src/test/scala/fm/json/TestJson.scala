@@ -16,7 +16,8 @@
 package fm.json
 
 import com.fasterxml.jackson.core.{JsonGenerator, JsonParser}
-import java.io.{Reader, StringReader, StringWriter}
+import fm.common.Resource
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Reader, StringReader, StringWriter}
 import java.math.{BigDecimal, BigInteger}
 import org.scalatest.{AppendedClues, FunSuite, Matchers}
 
@@ -461,6 +462,16 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       case JsonBoolean(value) => value shouldBe false
       case _ => assert(false)
     }
+  }
+
+  test("Java Serialization") {
+    val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
+    Resource.using(new ObjectOutputStream(bos)) { oos: ObjectOutputStream => oos.writeObject(jsonObjectNode) }
+
+    val bis: ByteArrayInputStream = new ByteArrayInputStream(bos.toByteArray)
+    val obj: JsonObject = Resource.using(new ObjectInputStream(bis)) { ois: ObjectInputStream => ois.readObject().asInstanceOf[JsonObject] }
+
+    obj shouldBe jsonObjectNode
   }
 
   private def checkParse(

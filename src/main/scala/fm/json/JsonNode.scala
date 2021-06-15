@@ -626,7 +626,7 @@ object JsonNode extends JsonValueFactory with JsonNodeParseFactory[JsonNode, Jso
   }
 }
 
-sealed abstract class JsonNode {
+sealed abstract class JsonNode extends Serializable {
   final def at(jsonPointerExpression: String): Option[JsonNode] = at(JsonPointer.valueOf(jsonPointerExpression))
 
   final def at(ptr: JsonPointer): Option[JsonNode] = {
