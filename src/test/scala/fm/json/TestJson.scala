@@ -78,7 +78,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |    "two",
       |    3.3
       |  ],
-      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f""".stripMargin.trim + " oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  " + """World!"
       |}
       |""".stripMargin.trim
 
@@ -175,7 +175,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |    "two",
       |    3.3
       |  ],
-      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f""".stripMargin.trim + " oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  " + """World!"
       |}
       |""".stripMargin.trim
 
