@@ -505,6 +505,24 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
     checkMinimal(s)
   } withClue(s"checkParse($s, $expected)")
 
+  test("at") {
+    jsonObjectNode.at("/string") shouldBe Some(JsonString("string"))
+    jsonObjectNode.at("/string/foo") shouldBe None
+
+    jsonObjectNode.at("/object/nestedString") shouldBe Some(JsonString("testing 123"))
+    jsonObjectNode.at("/object/nestedArray/1") shouldBe Some(JsonString("two"))
+    jsonObjectNode.at("/object/nestedArray/2") shouldBe Some(JsonBigDecimal(new BigDecimal("3.3")))
+    jsonObjectNode.at("/object/nestedArray/3") shouldBe None
+  }
+
+  test("getString") {
+    jsonObjectNode.getString("string") shouldBe Some("string")
+    jsonObjectNode.getString("/string") shouldBe Some("string")
+    jsonObjectNode.getString("intMax") shouldBe Some("2147483647") // Auto conversion to string
+    jsonObjectNode.getString("/object/nestedString") shouldBe Some("testing 123")
+    jsonObjectNode.getBigDecimal("/object/nestedArray/2") shouldBe Some(new BigDecimal("3.3"))
+  }
+
   private def checkPipe(parser: JsonParser, expected: String): Unit = {
     val sw: StringWriter = new StringWriter()
     val generator: JsonGenerator = Json.jsonFactory.createGenerator(sw)

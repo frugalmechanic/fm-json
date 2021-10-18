@@ -515,8 +515,79 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   override def isJsonArray: Boolean = false
   override def isJsonObject: Boolean = true
 
-  def apply(fieldName: String): JsonNode = get(fieldName).getOrElse{ throw new NoSuchElementException(s"No $fieldName member") }
-  def get(fieldName: String): Option[JsonNode] = members.find{ _._1 === fieldName }.map{ _._2 }
+  def apply(fieldName: String): JsonNode = {
+    get(fieldName).getOrElse{ throw new NoSuchElementException(s"No $fieldName member") }
+  }
+
+  def get(fieldName: String): Option[JsonNode] = {
+    val res: Option[JsonNode] = members.find{ _._1 === fieldName }.map{ _._2 }
+
+    // Fallback to using JsonPointer expression if the field name looks like it could be one
+    if (res.isEmpty && fieldName.startsWith("/")) at(fieldName) else res
+  }
+
+  def getJsonValue(fieldName: String): Option[JsonValue] = get(fieldName).flatMap{ _.tryCast[JsonValue] }
+  def getJsonString(fieldName: String): Option[JsonString] = get(fieldName).flatMap{ _.tryCast[JsonString] }
+  def getJsonBoolean(fieldName: String): Option[JsonBoolean] = get(fieldName).flatMap{ _.tryCast[JsonBoolean] }
+  def getJsonNumber(fieldName: String): Option[JsonValue] = get(fieldName).flatMap{ _.tryCast[JsonNumber] }
+  def getJsonObject(fieldName: String): Option[JsonObject] = get(fieldName).flatMap{ _.tryCast[JsonObject] }
+  def getJsonArray(fieldName: String): Option[JsonArray] = get(fieldName).flatMap{ _.tryCast[JsonArray] }
+
+  def getString(fieldName: String): Option[String] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => Some(n.asString)
+      case n: JsonString => Some(n.asString)
+      case _ => None
+    }
+  }
+
+  def getInt(fieldName: String): Option[Int] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => n.toIntOption
+      case n: JsonString => n.value.toIntOption
+      case _ => None
+    }
+  }
+
+  def getLong(fieldName: String): Option[Long] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => n.toLongOption
+      case n: JsonString => n.value.toLongOption
+      case _ => None
+    }
+  }
+
+  def getFloat(fieldName: String): Option[Float] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => n.toFloatOption
+      case n: JsonString => n.value.toFloatOption
+      case _ => None
+    }
+  }
+
+  def getDouble(fieldName: String): Option[Double] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => n.toDoubleOption
+      case n: JsonString => n.value.toDoubleOption
+      case _ => None
+    }
+  }
+
+  def getBigInteger(fieldName: String): Option[BigInteger] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => n.toBigIntegerOption
+      case n: JsonString => n.value.toBigIntegerOption
+      case _ => None
+    }
+  }
+
+  def getBigDecimal(fieldName: String): Option[BigDecimal] = {
+    get(fieldName).flatMap{
+      case n: JsonNumber => Some(n.asBigDecimal)
+      case n: JsonString => n.value.toBigDecimalOption
+      case _ => None
+    }
+  }
 
   override def write(gen: JsonGenerator, options: JsonOptions): Unit = {
     gen.writeStartObject()
@@ -595,6 +666,13 @@ sealed abstract class JsonContainerNode extends JsonNode {
   def apply(index: Int): JsonNode
   def get(index: Int): Option[JsonNode]
   def size: Int
+
+  final def getJsonValue(index: Int): Option[JsonValue] = get(index).flatMap{ _.tryCast[JsonValue] }
+  final def getJsonString(index: Int): Option[JsonString] = get(index).flatMap{ _.tryCast[JsonString] }
+  final def getJsonBoolean(index: Int): Option[JsonBoolean] = get(index).flatMap{ _.tryCast[JsonBoolean] }
+  final def getJsonNumber(index: Int): Option[JsonValue] = get(index).flatMap{ _.tryCast[JsonNumber] }
+  final def getJsonObject(index: Int): Option[JsonObject] = get(index).flatMap{ _.tryCast[JsonObject] }
+  final def getJsonArray(index: Int): Option[JsonArray] = get(index).flatMap{ _.tryCast[JsonArray] }
 
   final def isEmpty: Boolean = size === 0
   final def isNotEmpty: Boolean = !isEmpty
