@@ -26,7 +26,7 @@ import scala.util.Try
 
 object JsonBinary extends JsonNodeParseFactory[ImmutableArray[Byte], JsonBinary] {
   def apply(data: Array[Byte], offset: Int, len: Int): JsonBinary = {
-    JsonBinary(ImmutableArray.wrap(java.util.Arrays.copyOfRange(data, offset, offset + len)))
+    JsonBinary(ImmutableArray.unsafeWrapArray(java.util.Arrays.copyOfRange(data, offset, offset + len)))
   }
 
   def apply(data: Array[Byte]): JsonBinary = {
@@ -37,7 +37,7 @@ object JsonBinary extends JsonNodeParseFactory[ImmutableArray[Byte], JsonBinary]
     currentTokenOrAdvance(parser)
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
     parser.readBinaryValue(bos)
-    ImmutableArray.wrap(bos.toByteArray)
+    ImmutableArray.unsafeWrapArray(bos.toByteArray)
   }
 }
 
@@ -454,15 +454,15 @@ object JsonObject extends JsonNodeParseFactory[IndexedSeq[(String, JsonNode)], J
 
     val nameToIdx: mutable.HashMap[String, Int] = new mutable.HashMap()
 
-    members.foreach { pair: (String, JsonNode) =>
+    members.foreach { (pair: (String, JsonNode)) =>
       nameToIdx.get(pair._1) match {
         case Some(existingIdx) => arr(existingIdx) = pair
         case None => arr(idx) = pair; nameToIdx(pair._1) = idx; idx += 1
       }
     }
 
-    if (idx === arr.length) JsonObject(ImmutableArray.wrap(arr))
-    else JsonObject(ImmutableArray.wrap(java.util.Arrays.copyOf(arr, idx)))
+    if (idx === arr.length) JsonObject(ImmutableArray.unsafeWrapArray(arr))
+    else JsonObject(ImmutableArray.unsafeWrapArray(java.util.Arrays.copyOf(arr, idx)))
   }
 
   val empty: JsonObject = JsonObject()
@@ -486,7 +486,7 @@ object JsonObject extends JsonNodeParseFactory[IndexedSeq[(String, JsonNode)], J
       }
     }
 
-    builder.result
+    builder.result()
   }
 
   private[json] def shouldIncludeField(pair: (String, JsonNode), options: JsonOptions): Boolean = {
@@ -544,7 +544,7 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   def getInt(fieldName: String): Option[Int] = {
     get(fieldName).flatMap{
       case n: JsonNumber => n.toIntOption
-      case n: JsonString => n.value.toIntOption
+      case n: JsonString => n.value.toIntOptionCached
       case _ => None
     }
   }
@@ -552,7 +552,7 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   def getLong(fieldName: String): Option[Long] = {
     get(fieldName).flatMap{
       case n: JsonNumber => n.toLongOption
-      case n: JsonString => n.value.toLongOption
+      case n: JsonString => n.value.toLongOptionCached
       case _ => None
     }
   }
@@ -560,7 +560,7 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   def getFloat(fieldName: String): Option[Float] = {
     get(fieldName).flatMap{
       case n: JsonNumber => n.toFloatOption
-      case n: JsonString => n.value.toFloatOption
+      case n: JsonString => n.value.toFloatOptionCached
       case _ => None
     }
   }
@@ -568,7 +568,7 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   def getDouble(fieldName: String): Option[Double] = {
     get(fieldName).flatMap{
       case n: JsonNumber => n.toDoubleOption
-      case n: JsonString => n.value.toDoubleOption
+      case n: JsonString => n.value.toDoubleOptionCached
       case _ => None
     }
   }
@@ -592,7 +592,7 @@ final case class JsonObject(members: IndexedSeq[(String, JsonNode)]) extends Jso
   override def write(gen: JsonGenerator, options: JsonOptions): Unit = {
     gen.writeStartObject()
 
-    members.foreach{ pair: (String, JsonNode) =>
+    members.foreach{ (pair: (String, JsonNode)) =>
       if (JsonObject.shouldIncludeField(pair, options)) {
         gen.writeFieldName(pair._1)
         pair._2.write(gen, options)
@@ -630,7 +630,7 @@ object JsonArray extends JsonNodeParseFactory[IndexedSeq[JsonNode], JsonArray] {
       builder += JsonNode.parse(parser, options)
     }
 
-    builder.result
+    builder.result()
   }
 }
 
@@ -751,6 +751,6 @@ sealed abstract class JsonNode extends Serializable {
     val gen: JsonNodeGenerator = new JsonNodeGenerator(options)
     write(gen, options)
     gen.close()
-    gen.result
+    gen.result()
   }
 }

@@ -1,12 +1,10 @@
-FMPublic
-
 name := "fm-json"
 
 description := "JSON Utils for Scala"
 
-scalaVersion := "2.12.13"
+scalaVersion := "3.2.2"
 
-crossScalaVersions := Seq("2.11.12", "2.12.13")
+crossScalaVersions := Seq("3.2.2", "2.13.10", "2.12.17", "2.11.12")
 
 val fatalWarnings = Seq(
   // Enable -Xlint, but disable the default 'unused' so we can manually specify below
@@ -33,13 +31,15 @@ scalacOptions := Seq(
 ) ++ fatalWarnings else Nil)
 
 // -Ywarn-unused-import/-Xfatal-warnings casues issues in the REPL and also during doc generation
-scalacOptions in (Compile, console) --= fatalWarnings
-scalacOptions in (Test, console) --= fatalWarnings
-scalacOptions in (Compile, doc) --= fatalWarnings
+Compile / console / scalacOptions --= fatalWarnings
+Test / console / scalacOptions --= fatalWarnings
+Compile / doc / scalacOptions --= fatalWarnings
 
 libraryDependencies ++= Seq(
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.12.3",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.3",
-  "com.frugalmechanic" %% "fm-common" % "0.51.0",
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test,
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.13.4",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.13.4",
+  "com.frugalmechanic" %% "fm-common" % "1.0.0",
+  "org.scalatest" %% "scalatest" % "3.2.15" % Test,
 )
+
+publishTo := sonatypePublishToBundle.value

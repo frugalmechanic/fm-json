@@ -19,9 +19,11 @@ import com.fasterxml.jackson.core.{JsonGenerator, JsonParser}
 import fm.common.Resource
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Reader, StringReader, StringWriter}
 import java.math.{BigDecimal, BigInteger}
-import org.scalatest.{AppendedClues, FunSuite, Matchers}
+import org.scalatest.{AppendedClues}
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-final class TestJson extends FunSuite with Matchers with AppendedClues {
+final class TestJson extends AnyFunSuite with Matchers with AppendedClues {
   private val jsonObjectString: String =
     """
       |{
@@ -78,7 +80,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |    "two",
       |    3.3
       |  ],
-      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: $ twoByte: ¢ threeByte: € fourByteSupplementary: 💥  World!"
       |}
       |""".stripMargin.trim
 
@@ -123,7 +125,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       "intArray" -> JsonArray(1, 2, 3),
       "stringArray" -> JsonArray("one", "two", "three"),
       "mixedArray" -> JsonArray(1, "two", new BigDecimal("3.3")),
-      "unicode" -> "Hello \r\t\n \\ / \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      "unicode" -> "Hello \r\t\n \\ / \" \b\f oneByte: $ twoByte: ¢ threeByte: € fourByteSupplementary: 💥  World!"
     )
   }
 
@@ -175,7 +177,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
       |    "two",
       |    3.3
       |  ],
-      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: \u0024 twoByte: \u00A2 threeByte: \u20AC fourByteSupplementary: \uD83D\uDCA5  World!"
+      |  "unicode" : "Hello \r\t\n \\ \/ \" \b\f oneByte: $ twoByte: ¢ threeByte: € fourByteSupplementary: 💥  World!"
       |}
       |""".stripMargin.trim
 
@@ -466,10 +468,10 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
 
   test("Java Serialization") {
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-    Resource.using(new ObjectOutputStream(bos)) { oos: ObjectOutputStream => oos.writeObject(jsonObjectNode) }
+    Resource.using(new ObjectOutputStream(bos)) { (oos: ObjectOutputStream) => oos.writeObject(jsonObjectNode) }
 
     val bis: ByteArrayInputStream = new ByteArrayInputStream(bos.toByteArray)
-    val obj: JsonObject = Resource.using(new ObjectInputStream(bis)) { ois: ObjectInputStream => ois.readObject().asInstanceOf[JsonObject] }
+    val obj: JsonObject = Resource.using(new ObjectInputStream(bis)) { (ois: ObjectInputStream) => ois.readObject().asInstanceOf[JsonObject] }
 
     obj shouldBe jsonObjectNode
   }
@@ -535,7 +537,7 @@ final class TestJson extends FunSuite with Matchers with AppendedClues {
   private def checkGenerator(node: JsonNode): Unit = {
     val generator: JsonNodeGenerator = new JsonNodeGenerator()
     node.write(generator, JsonOptions.default)
-    generator.result shouldBe node
+    generator.result() shouldBe node
   } withClue s"checkGenerator($node)"
 
   private def checkReRead(s: String, expected: JsonNode, parseFactory: JsonNodeParseFactory[_,_]): Unit = {

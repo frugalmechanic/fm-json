@@ -33,7 +33,7 @@ object JsonNodeGenerator {
       currentFieldName = null
     }
 
-    def result: JsonObject = JsonObject(builder.result)
+    def result(): JsonObject = JsonObject(builder.result())
   }
 
   private case class JsonArrayBuilder(parent: JsonNodeBuilder) extends JsonNodeBuilder {
@@ -41,7 +41,7 @@ object JsonNodeGenerator {
 
     def += (fieldName: String): Unit = throw new IllegalStateException("Unexpected JaonToken.FIELD_NAME")
     def += (node: JsonNode): Unit = builder += node
-    def result: JsonArray = JsonArray(builder.result)
+    def result(): JsonArray = JsonArray(builder.result())
   }
 
   // Only used as a root JsonNode holder
@@ -56,12 +56,12 @@ object JsonNodeGenerator {
     }
 
     def parent: JsonNodeBuilder = null // not applicable
-    def result: JsonNode = node
+    def result(): JsonNode = node
   }
 
   private sealed abstract class JsonNodeBuilder {
     def parent: JsonNodeBuilder
-    def result: JsonNode
+    def result(): JsonNode
     def += (fieldName: String): Unit
     def += (node: JsonNode): Unit
   }
@@ -79,11 +79,11 @@ final class JsonNodeGenerator(options: JsonOptions) extends JsonGenerator {
   private[this] var currentBuilder: JsonNodeBuilder = rootBuilder
   private[this] var objectCodec: ObjectCodec = null
 
-  def result: JsonNode = rootBuilder.result
+  def result(): JsonNode = rootBuilder.result()
 
   private def pop(): Unit = {
     if (null != currentBuilder) {
-      val result: JsonNode = currentBuilder.result
+      val result: JsonNode = currentBuilder.result()
       currentBuilder = currentBuilder.parent
       currentBuilder += result
     }
@@ -148,7 +148,7 @@ final class JsonNodeGenerator(options: JsonOptions) extends JsonGenerator {
 
   override def writeBinary(bv: Base64Variant, data: InputStream, dataLength: Int): Int = {
     val bytes: Array[Byte] = data.readNBytes(dataLength)
-    writeValue(JsonBinary(ImmutableArray.wrap(bytes)))
+    writeValue(JsonBinary(ImmutableArray.unsafeWrapArray(bytes)))
     bytes.length
   }
 

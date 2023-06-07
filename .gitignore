@@ -1,10 +1,11 @@
-target
+.bsp
 .cache
-.scala_dependencies
-.target
 .classpath
-.project
-.settings
-.worksheet
 .idea
 .idea_modules
+.project
+.scala_dependencies
+.settings
+.target
+.worksheet
+target

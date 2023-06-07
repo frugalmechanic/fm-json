@@ -144,8 +144,8 @@ final case class JsonNodeParser(node: JsonNode) extends JsonParser {
 
   private[this] var closed: Boolean = false
   private[this] var location: Location = Location.makeInitialLocation(node)
-  private[this] var currentToken: JsonToken = null
-  private[this] var lastToken: JsonToken = null
+  private[this] var _currentToken: JsonToken = null
+  private[this] var _lastToken: JsonToken = null
 
   private[this] val readContext: JsonReadContext = new JsonReadContext(null, null, 0, 0, 0)
 
@@ -171,11 +171,11 @@ final case class JsonNodeParser(node: JsonNode) extends JsonParser {
     }
 
     if (null == location) {
-      currentToken = null // EOF
+      _currentToken = null // EOF
     } else {
-      currentToken = location.currentToken()
+      _currentToken = location.currentToken()
 
-      if (JsonToken.START_OBJECT === currentToken || JsonToken.START_ARRAY === currentToken) {
+      if (JsonToken.START_OBJECT === _currentToken || JsonToken.START_ARRAY === _currentToken) {
         // If we are pointing to a non FIELD_NAME value is that an Object or Array we need to recurse our location into it
         location.currentNode match {
           case null => // Do Nothing
@@ -213,18 +213,18 @@ final case class JsonNodeParser(node: JsonNode) extends JsonParser {
     this
   }
 
-  override def getCurrentToken: JsonToken = currentToken
+  override def getCurrentToken: JsonToken = _currentToken
   override def getCurrentTokenId: Int = getCurrentToken.id()
-  override def hasCurrentToken: Boolean = null != currentToken
+  override def hasCurrentToken: Boolean = null != _currentToken
   override def hasTokenId(id: Int): Boolean = getCurrentTokenId === id
   override def hasToken(t: JsonToken): Boolean = getCurrentToken === t
 
   override def clearCurrentToken(): Unit = {
-    lastToken = currentToken
-    currentToken = null
+    _lastToken = _currentToken
+    _currentToken = null
   }
 
-  override def getLastClearedToken: JsonToken = lastToken
+  override def getLastClearedToken: JsonToken = _lastToken
 
   override def overrideCurrentName(name: String): Unit = {} // nop - Do not think we need this
   override def getCurrentName: String = location.currentFieldName
